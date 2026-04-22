@@ -1,4 +1,5 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
 
@@ -29,14 +30,14 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Navalha & Co. — Barbearia premium" },
+      { name: "description", content: "Barbearia premium em São Paulo. Corte, barba e ritual de cuidados em ambiente exclusivo." },
+      { name: "author", content: "Navalha & Co." },
+      { property: "og:title", content: "Navalha & Co." },
+      { property: "og:description", content: "Mais que uma barbearia. Um ritual de estilo." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:site", content: "@navalha.co" },
     ],
     links: [
       {
@@ -65,5 +66,10 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-  return <Outlet />;
+  return (
+    <>
+      <Outlet />
+      <Toaster theme="dark" position="top-center" richColors />
+    </>
+  );
 }
