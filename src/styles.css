@@ -157,5 +157,4 @@
   .shadow-elegant { box-shadow: var(--shadow-elegant); }
   .transition-smooth { transition: var(--transition-smooth); }
   .font-display { font-family: var(--font-display); }
-  }
 }
