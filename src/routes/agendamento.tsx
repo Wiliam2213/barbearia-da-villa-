@@ -1,13 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Clock, User, Calendar as CalendarIcon, Phone, ChevronRight, Sparkles } from "lucide-react";
+import { Check, Clock, User, Calendar as CalendarIcon, Phone, ChevronRight, Sparkles, Loader2 } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { SERVICES, BARBERS, TIME_SLOTS, SITE } from "@/data/site";
+import { fetchOccupiedSlots, createBooking } from "@/lib/booking";
 
 export const Route = createFileRoute("/agendamento")({
   head: () => ({
@@ -32,6 +33,9 @@ function AgendamentoPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [done, setDone] = useState(false);
+  const [occupied, setOccupied] = useState<Set<string>>(new Set());
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const service = SERVICES.find((s) => s.id === serviceId);
   const barber = BARBERS.find((b) => b.id === barberId);
@@ -52,12 +56,25 @@ function AgendamentoPage() {
     return out;
   }, []);
 
-  // Mock: alguns horários "ocupados" para feedback visual
-  const occupied = useMemo(() => {
-    if (!date) return new Set<string>();
-    const seed = date.charCodeAt(date.length - 1) % TIME_SLOTS.length;
-    return new Set([TIME_SLOTS[seed], TIME_SLOTS[(seed + 3) % TIME_SLOTS.length], TIME_SLOTS[(seed + 7) % TIME_SLOTS.length]]);
-  }, [date]);
+  // Busca horários ocupados reais quando barbeiro + data estão escolhidos
+  useEffect(() => {
+    if (!barberId || !date) {
+      setOccupied(new Set());
+      return;
+    }
+    let cancelled = false;
+    setLoadingSlots(true);
+    fetchOccupiedSlots(barberId, date)
+      .then((set) => {
+        if (!cancelled) setOccupied(set);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingSlots(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [barberId, date]);
 
   function next() {
     if (step === 1 && !serviceId) return toast.error("Escolha um serviço");
@@ -69,10 +86,22 @@ function AgendamentoPage() {
     setStep((s) => (Math.max(1, s - 1) as Step));
   }
 
-  function submit() {
+  async function submit() {
     if (!name.trim() || !phone.trim()) return toast.error("Preencha nome e telefone");
-    setDone(true);
-    toast.success("Agendamento confirmado!", { description: `${service?.name} com ${barber?.name}` });
+    if (!serviceId || !barberId || !date || !time) return toast.error("Dados incompletos");
+    setSubmitting(true);
+    try {
+      await createBooking({ serviceId, barberId, date, time, name, phone });
+      setDone(true);
+      toast.success("Agendamento confirmado!", {
+        description: `${service?.name} com ${barber?.name}`,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro ao agendar";
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -183,14 +212,17 @@ function AgendamentoPage() {
 
                         {date && (
                           <div className="mt-8">
-                            <h4 className="text-xs uppercase tracking-widest text-gold mb-4">Horários disponíveis</h4>
+                            <h4 className="text-xs uppercase tracking-widest text-gold mb-4 flex items-center gap-2">
+                              Horários disponíveis
+                              {loadingSlots && <Loader2 className="size-3 animate-spin" />}
+                            </h4>
                             <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
                               {TIME_SLOTS.map((t) => {
                                 const off = occupied.has(t);
                                 return (
                                   <button
                                     key={t}
-                                    disabled={off}
+                                    disabled={off || loadingSlots}
                                     onClick={() => setTime(t)}
                                     className={`py-2 rounded-md text-sm border transition-smooth ${
                                       off
@@ -205,6 +237,11 @@ function AgendamentoPage() {
                                 );
                               })}
                             </div>
+                            {!loadingSlots && occupied.size > 0 && (
+                              <p className="mt-3 text-xs text-muted-foreground">
+                                {occupied.size} horário{occupied.size > 1 ? "s" : ""} já reservado{occupied.size > 1 ? "s" : ""}.
+                              </p>
+                            )}
                           </div>
                         )}
                       </div>
@@ -248,8 +285,14 @@ function AgendamentoPage() {
                     Continuar <ChevronRight className="size-4" />
                   </Button>
                 ) : (
-                  <Button variant="hero" size="lg" onClick={submit}>
-                    Confirmar agendamento
+                  <Button variant="hero" size="lg" onClick={submit} disabled={submitting}>
+                    {submitting ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" /> Confirmando...
+                      </>
+                    ) : (
+                      "Confirmar agendamento"
+                    )}
                   </Button>
                 )}
               </div>
