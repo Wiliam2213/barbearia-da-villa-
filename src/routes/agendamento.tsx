@@ -212,14 +212,17 @@ function AgendamentoPage() {
 
                         {date && (
                           <div className="mt-8">
-                            <h4 className="text-xs uppercase tracking-widest text-gold mb-4">Horários disponíveis</h4>
+                            <h4 className="text-xs uppercase tracking-widest text-gold mb-4 flex items-center gap-2">
+                              Horários disponíveis
+                              {loadingSlots && <Loader2 className="size-3 animate-spin" />}
+                            </h4>
                             <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
                               {TIME_SLOTS.map((t) => {
                                 const off = occupied.has(t);
                                 return (
                                   <button
                                     key={t}
-                                    disabled={off}
+                                    disabled={off || loadingSlots}
                                     onClick={() => setTime(t)}
                                     className={`py-2 rounded-md text-sm border transition-smooth ${
                                       off
@@ -234,6 +237,11 @@ function AgendamentoPage() {
                                 );
                               })}
                             </div>
+                            {!loadingSlots && occupied.size > 0 && (
+                              <p className="mt-3 text-xs text-muted-foreground">
+                                {occupied.size} horário{occupied.size > 1 ? "s" : ""} já reservado{occupied.size > 1 ? "s" : ""}.
+                              </p>
+                            )}
                           </div>
                         )}
                       </div>
@@ -277,8 +285,14 @@ function AgendamentoPage() {
                     Continuar <ChevronRight className="size-4" />
                   </Button>
                 ) : (
-                  <Button variant="hero" size="lg" onClick={submit}>
-                    Confirmar agendamento
+                  <Button variant="hero" size="lg" onClick={submit} disabled={submitting}>
+                    {submitting ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" /> Confirmando...
+                      </>
+                    ) : (
+                      "Confirmar agendamento"
+                    )}
                   </Button>
                 )}
               </div>
