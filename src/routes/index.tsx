@@ -15,7 +15,7 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Barbearia premium em São Paulo. Corte, barba e ritual de cuidados em ambiente exclusivo. Agende seu horário online." },
       { property: "og:title", content: "Navalha & Co. — Barbearia premium" },
       { property: "og:description", content: "Mais que uma barbearia. Um ritual de estilo e presença para o cavalheiro contemporâneo." },
-      { property: "og:image", content: "/src/assets/hero-barber.jpg" },
+      { property: "og:image", content: heroImg },
     ],
   }),
   component: Index,
